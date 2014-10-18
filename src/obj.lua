@@ -11,7 +11,7 @@ end
 local default={
 	frame={
 		x=25,y=25,width=50,height=50,
-		r=127,g=255,b=127,a=255
+		r=255,g=255,b=255,a=255
 	},
 	text={
 		x=0,y=0,size=15,value="Hello, World!",
@@ -114,7 +114,12 @@ hook.new("draw",function()
 			if v.draw then
 				v.draw(v,u)
 			elseif tpe=="frame" then
-				graphics.rectangle("fill",u*v.realx,u*v.realy,u*v.width,u*v.height)
+				if v.image then
+					local w,h=v.image:getDimensions()
+					graphics.draw(v.image,u*v.realx,u*v.realy,r,(v.width*u)/w,(v.height*u)/h)
+				else
+					graphics.rectangle("fill",u*v.realx,u*v.realy,u*v.width,u*v.height)
+				end
 			elseif tpe=="text" then
 				graphics.setFont(font[u*v.size])
 				graphics.printf(v.value,u*v.realx,u*v.realy,u*v.maxwidth,v.style)
@@ -151,6 +156,14 @@ local function findObject(x,y,cb)
 		end
 	end
 end
+
+hook.new("update",function(dt)
+	for k,v in pairs(objects) do
+		if v.update then
+			v:update(dt)
+		end
+	end
+end)
 
 hook.new("mouse_down",function(x,y)
 	local w,h=graphics.getDimensions()

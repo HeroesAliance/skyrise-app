@@ -1,6 +1,6 @@
 rm game.love
 cd src
-zip game.love *
+zip -r game.love *
 cd ..
 rm app/assets/game.love
 cp src/game.love game.love

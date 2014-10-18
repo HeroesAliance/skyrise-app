@@ -1,4 +1,5 @@
 local graphics=love.graphics
+local image=love.image
 hook.new("load",function()
 	local function vibrate()
 		if love.system.vibrate then
@@ -53,8 +54,34 @@ hook.new("load",function()
 	local bfloor=0
 	local autonWinner
 	local ccolor="red"
+	local redFrame
+	local blueFrame
+	
+	local impossibru=graphics.newImage("res/not_an_easteregg.png")
+	
+	local clr_red={180,20,20}
+	local clr_blue={19,65,190}
+	
+	local function resetScore()
+		rfloor=0
+		bfloor=0
+		autonWinner=nil
+		for k,v in pairs(posts) do
+			v.ncubes=0
+			v.update()
+		end
+		blueFrame.reset()
+		redFrame.reset()
+	end
+	
+	local autonIndicator
 	
 	local function updateScore()
+		if autonWinner then
+			autonIndicator.r,autonIndicator.g,autonIndicator.b=unpack(autonWinner=="red" and clr_red or clr_blue)
+		else
+			autonIndicator.r,autonIndicator.g,autonIndicator.b=40,40,40
+		end
 		local r=rfloor
 		local b=bfloor
 		if autonWinner=="red" then
@@ -62,13 +89,17 @@ hook.new("load",function()
 		elseif autonWinner=="blue" then
 			b=b+10
 		end
+		local cr=rfloor
+		local cb=bfloor
 		for k,v in pairs(posts) do
 			if v.ncubes>0 then
 				for n,l in pairs(v.cubes) do
 					if l.a~=0 then
 						if l.r>l.b then
+							cr=cr+1
 							r=r+(n==v.ncubes and 3 or 2)
 						else
+							cb=cb+1
 							b=b+(n==v.ncubes and 3 or 2)
 						end
 					end
@@ -87,10 +118,39 @@ hook.new("load",function()
 		for k,v in pairs(skyrisecubes) do
 			if v.a~=0 then
 				if v.r>v.b then
+					cr=cr+1
 					r=r+4
 				else
+					cb=cb+1
 					b=b+4
 				end
+			end
+		end
+		if cr>22 or cb>22 then
+			if redFrame then
+				redFrame.image=impossibru
+				redFrame.r=50
+				redFrame.g=50
+				redFrame.b=50
+			end
+			if blueFrame then
+				blueFrame.image=impossibru
+				blueFrame.r=50
+				blueFrame.g=50
+				blueFrame.b=50
+			end
+		else
+			if redFrame then
+				redFrame.r=0
+				redFrame.g=0
+				redFrame.b=0
+				redFrame.image=nil
+			end
+			if blueFrame then
+				blueFrame.r=0
+				blueFrame.g=0
+				blueFrame.b=0
+				blueFrame.image=nil
 			end
 		end
 		scoringTextRed.value=tostring(r)
@@ -101,10 +161,8 @@ hook.new("load",function()
 	local sz=4.5
 	local height=sz*2.5
 	local width=sz
-	
-	local clr_red={180,20,20}
-	local clr_blue={19,65,190}
 	local indicatorCube
+	local doneSwitching=true
 	
 	local function field(c1,c2)
 		local main=obj.new("frame",{
@@ -120,6 +178,23 @@ hook.new("load",function()
 			onDrag=function()
 				return true
 			end,
+			update=function(s,dt)
+				if s.ex and s.ex~=s.x then
+					if s.ex>s.x then
+						s.x=s.x+(math.max(5,(s.ex-s.x)*4)*dt)
+					else
+						s.x=s.x-(math.max(5,(s.x-s.ex)*4)*dt)
+					end
+					if math.abs(s.x-s.ex)<0.1 then
+						s.x=s.ex
+						if s.x~=0 then
+							s.x=(w/h)*-100
+							s.ex=(w/h)*-100
+						end
+						doneSwitching=true
+					end
+				end
+			end
 		})
 		
 		local c1r,c1g,c1b=unpack(c1)
@@ -141,6 +216,7 @@ hook.new("load",function()
 				end
 				updateScore()
 			end
+			post.update=updateCubes
 			post.ncubes=0
 			post.layer=2
 			post.cubes={}
@@ -345,6 +421,13 @@ hook.new("load",function()
 			end
 	
 			updateSections()
+			
+			function main.reset()
+				ncubes=0
+				nsections=0
+				updateSections()
+				updateCubes()
+			end
 		end
 
 		local smallGoal1=main:new("frame",{restricted=true,capacity=2,x=(((w/h)*100)*0.34)-(width),y=94-(height*1.5),r=128,g=128,b=128,width=width,height=height*1.5})
@@ -378,6 +461,68 @@ hook.new("load",function()
 		r=clr_blue[1],g=clr_blue[2],b=clr_blue[3],
 		style="center",
 		value="0",
+	})
+	
+	local scoreMenuButton=menu:new("frame",{
+		x=0,y=0,
+		width=mwidth,height=(mwidth/3.5)+10,
+		a=0,
+		onClick=function()
+			vibrate()
+			local menu=obj.new("frame",{
+				layer=20,
+				x=0,y=0,
+				width=(w/h)*100,height=100,
+				r=255,g=255,b=255,a=240,
+				onDown=function(s)
+					return true
+				end,
+				onDrag=function(s)
+					return true
+				end,
+				onClick=function(s)
+					s:destroy()
+					vibrate()
+					return true
+				end,
+			})
+			local sz=(w/h)*25
+			menu:new("text",{
+				x=0,y=30-(sz/2),
+				size=sz,
+				maxwidth=(w/h)*47,
+				r=clr_red[1],g=clr_red[2],b=clr_red[3],
+				style="center",
+				value=scoringTextRed.value,
+			})
+			menu:new("text",{
+				x=(w/h)*53,y=30-(sz/2),
+				size=sz,
+				maxwidth=(w/h)*47,
+				r=clr_blue[1],g=clr_blue[2],b=clr_blue[3],
+				style="center",
+				value=scoringTextBlue.value,
+			})
+			local bh=20
+			local bw=20
+			local resetButton=menu:new("frame",{
+				x=2,y=98-bh,
+				height=bh,width=bw,
+				r=30,g=30,b=30,
+				onClick=function(s)
+					resetScore()
+				end,
+			})
+			local ts=bh/2
+			resetButton:new("text",{
+				x=0,y=(bh/2)-(ts/2),
+				r=180,g=180,b=180,
+				size=ts,
+				maxwidth=bw,
+				value="0",
+				style="center",
+			})
+		end,
 	})
 	
 	local floorGoalCounter=menu:new("frame",{
@@ -467,7 +612,7 @@ hook.new("load",function()
 		end
 	})
 	
-	local autonIndicator=obj.new("frame",{
+	autonIndicator=obj.new("frame",{
 		layer=10,
 		x=((w/h)*77)-17,y=2,
 		width=15,height=15,
@@ -475,10 +620,8 @@ hook.new("load",function()
 		onClick=function(s)
 			if not autonWinner or autonWinner~=ccolor then
 				autonWinner=ccolor
-				s.r,s.g,s.b=unpack(ccolor=="red" and clr_red or clr_blue)
 			else
 				autonWinner=nil
-				s.r,s.g,s.b=40,40,40
 			end
 			updateScore()
 			vibrate()
@@ -486,28 +629,46 @@ hook.new("load",function()
 		end,
 	})
 	
-	local redFrame=field(clr_red,clr_blue)
-	local blueFrame=field(clr_blue,clr_red)
-	blueFrame.y=100
+	redFrame=field(clr_red,clr_blue)
+	blueFrame=field(clr_blue,clr_red)
+	blueFrame.x=(w/h)*-100
+	
+	local function ud(s,dt)
+		s.x=s.ex
+	end
 	
 	local switchSideButton=menu:new("frame",{
 		x=(mwidth/8),y=80,
 		width=mwidth-(mwidth/4),height=12,
 		r=20,g=20,b=20,
 		onClick=function(s)
-			if redFrame.y==0 then
-				redFrame.y=100
-				blueFrame.y=0
-				ccolor="blue"
-			else
-				redFrame.y=0
-				blueFrame.y=100
-				ccolor="red"
+			if doneSwitching then
+				doneSwitching=false
+				if ccolor=="red" then
+					redFrame.ex=(w/h)*100
+					blueFrame.ex=0
+					ccolor="blue"
+				else
+					redFrame.ex=0
+					blueFrame.ex=(w/h)*100
+					ccolor="red"
+				end
+				vibrate()
+				floorGoalCounter.value=tostring(ccolor=="red" and rfloor or bfloor)
+				return true
 			end
-			vibrate()
-			floorGoalCounter.value=tostring(ccolor=="red" and rfloor or bfloor)
-			return true
-		end
+		end,
+		draw=function(s,u)
+			graphics.rectangle("fill",u*s.realx,u*s.realy,u*s.width,u*s.height)
+			graphics.setColor(180,180,180)
+			graphics.setLineWidth(u*(s.height/8))
+			graphics.setLineJoin("miter")
+			local arw=s.height/1.5
+			local sx=s.realx+(s.width/2)-(arw/2)
+			local sy=s.realy+6
+			graphics.line(u*sx,u*sy,u*(sx+arw),u*sy)
+			graphics.line(u*(sx+(arw/2)),u*(sy-(s.height/4)),u*sx,u*sy,u*(sx+(arw/2)),u*(sy+(s.height/4)))
+		end,
 	})
 end)
 
