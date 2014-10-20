@@ -140,7 +140,7 @@ hook.new("load",function()
 		s.cubes=s.sCubes+s.pCubes
 		score.b=s.floor + s.sections*4 + s.sCubes*4 + s.owned + s.pCubes*2
 		if autonWinner=="blue" then
-			score.r=score.r+10
+			score.b=score.b+10
 		end
 		
 		if score.red.cubes>22 or score.red.cubes>22 then
@@ -609,6 +609,7 @@ hook.new("load",function()
 					end
 					text(redtext,(w/h)*2,(w/h)*2,6.5)
 					text(bluetext,(w/h)*52,(w/h)*2,6.5)
+					vibrate()
 					return true
 				end
 			})
