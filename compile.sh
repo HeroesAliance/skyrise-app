@@ -1,3 +1,5 @@
+rm -r app/res
+cp -r res app/res
 rm game.love
 cd src
 zip -r game.love *

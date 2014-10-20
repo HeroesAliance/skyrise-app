@@ -56,6 +56,7 @@ hook.new("load",function()
 	local ccolor="red"
 	local redFrame
 	local blueFrame
+	local floorGoalCounter
 	
 	local impossibru=graphics.newImage("res/not_an_easteregg.png")
 	
@@ -72,6 +73,7 @@ hook.new("load",function()
 		end
 		blueFrame.reset()
 		redFrame.reset()
+		floorGoalCounter.value="0"
 	end
 	
 	local autonIndicator
@@ -296,13 +298,11 @@ hook.new("load",function()
 				x=((w/h)*46)-(width*1.1),y=-5,
 				r=220,g=220,b=10,
 				width=width*1.2,height=5,
-				xclick=width,
+				xclick=width*2,
 				onClick=function(s)
-					if s.a==255 then
-						sectionsenabled=not sectionsenabled
-						updateSections()
-						vibrate()
-					end
+					sectionsenabled=not sectionsenabled
+					updateSections()
+					vibrate()
 				end,
 				onDrag=function(s)
 					if sectionsenabled and nsections==1 then
@@ -347,7 +347,12 @@ hook.new("load",function()
 							vibrate()
 						end
 					end
-				end
+				end,
+				onClick=function()
+					sectionsenabled=not sectionsenabled
+					updateSections()
+					vibrate()
+				end,
 			})
 	
 			 -- skyrise sections
@@ -371,7 +376,7 @@ hook.new("load",function()
 							vibrate()
 						end
 					end,
-					xclick=width,
+					xclick=width*2,
 				})
 				table.insert(sections,section)
 				table.insert(skyrises,section)
@@ -399,6 +404,7 @@ hook.new("load",function()
 					layer=3,
 					x=x+((width/2)-(height/2)),y=83-(height*(l1-1)),
 					width=height,height=height,
+					xclick=width,
 					r=c1r,g=c1g,b=c1b,a=0,
 					draw=drawCube,
 					onDrag=function(s)
@@ -443,7 +449,18 @@ hook.new("load",function()
 	end
 	
 	local mwidth=(w/h)*23
-	local menu=obj.new("frame",{layer=10,r=255,g=255,b=255,a=200,x=(w/h)*77,y=0,width=mwidth,height=100})
+	local menu=obj.new("frame",{
+		layer=10,r=255,g=255,b=255,a=200,x=(w/h)*77,y=0,width=mwidth,height=100,
+		onDown=function()
+			return true
+		end,
+		onClick=function()
+			return true
+		end,
+		onDrag=function()
+			return true
+		end,
+	})
 	
 	scoringTextRed=menu:new("text",{
 		x=0,y=5,
@@ -525,7 +542,7 @@ hook.new("load",function()
 		end,
 	})
 	
-	local floorGoalCounter=menu:new("frame",{
+	floorGoalCounter=menu:new("frame",{
 		x=mwidth/8,y=36,
 		width=mwidth-mwidth/4,height=12,
 		r=20,g=20,b=20,

@@ -39,7 +39,7 @@ if love.system.getOS()=="Android" then
 		x=x*w
 		y=y*h
 		if id==0 then
-			if dist(x,mx,y,my)>h/(mdrag and 100 or 40) then	
+			if dist(x,mx,y,my)>h/(mdrag and 100 or 30) then	
 				mdrag=true
 				mx=x
 				my=y
@@ -86,7 +86,7 @@ else
 	end
 	function love.mousereleased(x,y,bt)
 		local w,h=love.graphics.getDimensions()
-		if dist(x,ox,y,oy)<h/40 and not mdrag then
+		if dist(x,ox,y,oy)<h/30 and not mdrag then
 			hook.queue("mouse_click",x,y,bt)
 		end
 		mdown=false
