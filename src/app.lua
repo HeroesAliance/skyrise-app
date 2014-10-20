@@ -77,32 +77,43 @@ hook.new("load",function()
 	end
 	
 	local autonIndicator
+	local score
 	
 	local function updateScore()
+		score={
+			r=0,
+			b=0,
+			red={
+				floor=rfloor,
+				sections=0,
+				sCubes=0,
+				owned=0,
+				pCubes=0,
+				cubes=0,
+			},
+			blue={
+				floor=bfloor,
+				sections=0,
+				sCubes=0,
+				owned=0,
+				pCubes=0,
+				cubes=0,
+			},
+			autonWinner=autonWinner,
+		}
 		if autonWinner then
 			autonIndicator.r,autonIndicator.g,autonIndicator.b=unpack(autonWinner=="red" and clr_red or clr_blue)
 		else
 			autonIndicator.r,autonIndicator.g,autonIndicator.b=40,40,40
 		end
-		local r=rfloor
-		local b=bfloor
-		if autonWinner=="red" then
-			r=r+10
-		elseif autonWinner=="blue" then
-			b=b+10
-		end
-		local cr=rfloor
-		local cb=bfloor
 		for k,v in pairs(posts) do
 			if v.ncubes>0 then
 				for n,l in pairs(v.cubes) do
 					if l.a~=0 then
-						if l.r>l.b then
-							cr=cr+1
-							r=r+(n==v.ncubes and 3 or 2)
-						else
-							cb=cb+1
-							b=b+(n==v.ncubes and 3 or 2)
+						local c=l.r>l.b and "red" or "blue"
+						score[c].pCubes=score[c].pCubes+1
+						if n==v.ncubes then
+							score[c].owned=score[c].owned+1
 						end
 					end
 				end
@@ -110,25 +121,23 @@ hook.new("load",function()
 		end
 		for k,v in pairs(skyrises) do
 			if v.a~=0 then
-				if v.color=="red" then
-					r=r+4
-				else
-					b=b+4
-				end
+				score[v.color].sections=score[v.color].sections+1
 			end
 		end
 		for k,v in pairs(skyrisecubes) do
 			if v.a~=0 then
-				if v.r>v.b then
-					cr=cr+1
-					r=r+4
-				else
-					cb=cb+1
-					b=b+4
-				end
+				local c=v.r>v.b and "red" or "blue"
+				score[c].sCubes=score[c].sCubes+1
 			end
 		end
-		if cr>22 or cb>22 then
+		local s=score.red
+		s.cubes=s.sCubes+s.pCubes
+		score.r=s.floor + s.sections*4 + s.sCubes*4 + s.owned + s.pCubes*2
+		local s=score.blue
+		s.cubes=s.sCubes+s.pCubes
+		score.b=s.floor + s.sections*4 + s.sCubes*4 + s.owned + s.pCubes*2
+		
+		if score.red.cubes>22 or score.red.cubes>22 then
 			if redFrame then
 				redFrame.image=impossibru
 				redFrame.r=50
@@ -155,8 +164,8 @@ hook.new("load",function()
 				blueFrame.image=nil
 			end
 		end
-		scoringTextRed.value=tostring(r)
-		scoringTextBlue.value=tostring(b)
+		scoringTextRed.value=tostring(score.r)
+		scoringTextBlue.value=tostring(score.b)
 	end
 	
 	local w,h=graphics.getDimensions()
@@ -451,6 +460,7 @@ hook.new("load",function()
 	local mwidth=(w/h)*23
 	local menu=obj.new("frame",{
 		layer=10,r=255,g=255,b=255,a=200,x=(w/h)*77,y=0,width=mwidth,height=100,
+
 		onDown=function()
 			return true
 		end,
@@ -522,6 +532,7 @@ hook.new("load",function()
 			})
 			local bh=20
 			local bw=20
+			local ts=bh/2
 			local resetButton=menu:new("frame",{
 				x=2,y=98-bh,
 				height=bh,width=bw,
@@ -530,13 +541,78 @@ hook.new("load",function()
 					resetScore()
 				end,
 			})
-			local ts=bh/2
 			resetButton:new("text",{
 				x=0,y=(bh/2)-(ts/2),
 				r=180,g=180,b=180,
 				size=ts,
 				maxwidth=bw,
 				value="0",
+				style="center",
+			})
+			local scoreSheetButton=menu:new("frame",{
+				x=4+bw,y=98-bh,
+				height=bh,width=bw,
+				r=30,g=30,b=30,
+				onClick=function(s)
+					local menu=menu:new("frame",{
+						layer=menu.layer+3,
+						x=0,y=0,
+						width=(w/h)*100,height=100,
+						r=255,g=255,b=255,a=240,
+						onDown=function(s)
+							return true
+						end,
+						onDrag=function(s)
+							return true
+						end,
+						onClick=function(s)
+							s:destroy()
+							vibrate()
+							return true
+						end,
+					})
+					local redtext="Red Teams:\n"..
+						"-Skyrise:\n"..
+						"--Sections [ "..score.red.sections.." ]\n"..
+						"--Cubes [ "..score.red.sCubes.." ]\n"..
+						"-Posts:\n"..
+						"--Owned [ "..score.red.owned.." ]\n"..
+						"--Cubes [ "..score.red.pCubes.." ]\n"..
+						"-Floor goals [ "..score.red.floor.." ]\n"..
+						"-Auton winner [ "..(score.autonWinner=="red" and "yes" or "no").." ]"
+					local bluetext="Blue Teams:\n"..
+						"-Skyrise:\n"..
+						"--Sections [ "..score.blue.sections.." ]\n"..
+						"--Cubes [ "..score.blue.sCubes.." ]\n"..
+						"-Posts:\n"..
+						"--Owned [ "..score.blue.owned.." ]\n"..
+						"--Cubes [ "..score.blue.pCubes.." ]\n"..
+						"-Floor goals [ "..score.blue.floor.." ]\n"..
+						"-Auton winner [ "..(score.autonWinner=="blue" and "yes" or "no").." ]"
+					local function text(txt,x,y,size,r,g,b)
+						local c=0
+						for i,l in txt:gmatch("([%-]*)([^\n]+)") do
+							menu:new("text",{
+								x=x+((#i)*(size*2)),y=y+(c*(size*1.3)),
+								maxwidth=(w/h)*46,
+								size=size,
+								value=l,
+							})
+							c=c+1
+						end
+					end
+					text(redtext,(w/h)*2,(w/h)*2,6.5)
+					text(bluetext,(w/h)*52,(w/h)*2,6.5)
+					return true
+				end
+			})
+			local ts=bh/2
+			scoreSheetButton:new("text",{
+				x=0,y=(bh/2)-(ts/2),
+				r=180,g=180,b=180,
+				size=ts,
+				maxwidth=bw,
+				value="S",
 				style="center",
 			})
 		end,
