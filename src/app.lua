@@ -133,9 +133,15 @@ hook.new("load",function()
 		local s=score.red
 		s.cubes=s.sCubes+s.pCubes
 		score.r=s.floor + s.sections*4 + s.sCubes*4 + s.owned + s.pCubes*2
+		if autonWinner=="red" then
+			score.r=score.r+10
+		end
 		local s=score.blue
 		s.cubes=s.sCubes+s.pCubes
 		score.b=s.floor + s.sections*4 + s.sCubes*4 + s.owned + s.pCubes*2
+		if autonWinner=="blue" then
+			score.r=score.r+10
+		end
 		
 		if score.red.cubes>22 or score.red.cubes>22 then
 			if redFrame then
