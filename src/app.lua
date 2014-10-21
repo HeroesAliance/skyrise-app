@@ -69,7 +69,7 @@ hook.new("load",function()
 		autonWinner=nil
 		for k,v in pairs(posts) do
 			v.ncubes=0
-			v.update()
+			v.doupdate()
 		end
 		blueFrame.reset()
 		redFrame.reset()
@@ -143,7 +143,7 @@ hook.new("load",function()
 			score.b=score.b+10
 		end
 		
-		if score.red.cubes>22 or score.red.cubes>22 then
+		if score.red.cubes>22 or score.blue.cubes>22 then
 			if redFrame then
 				redFrame.image=impossibru
 				redFrame.r=50
@@ -233,7 +233,7 @@ hook.new("load",function()
 				end
 				updateScore()
 			end
-			post.update=updateCubes
+			post.doupdate=updateCubes
 			post.ncubes=0
 			post.layer=2
 			post.cubes={}
@@ -274,6 +274,7 @@ hook.new("load",function()
 							s.r=r
 							s.g=g
 							s.b=b
+							updateCubes()
 							vibrate()
 							return true
 						end
@@ -283,6 +284,7 @@ hook.new("load",function()
 							s.r=indicatorCube.r
 							s.g=indicatorCube.g
 							s.b=indicatorCube.b
+							updateCubes()
 							vibrate()
 							return true
 						end
