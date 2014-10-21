@@ -107,7 +107,7 @@ hook.new("draw",function()
 	local w,h=graphics.getDimensions()
 	local u=h/100
 	graphics.setBackgroundColor(0,0,0)
-	for k,v in pairs(objects) do
+	for k,v in pairs(objects) do	
 		if v.a~=0 then
 			graphics.setColor(v.r,v.g,v.b,v.a)
 			local tpe=v.type
@@ -126,6 +126,26 @@ hook.new("draw",function()
 			end
 		end
 	end
+	--[[for k,v in pairs(objects) do	
+		if v.type=="frame" and (v.onClick or v.onDrag or v.onDown) then
+			local rx=v.realx
+			local ry=v.realy
+			local rw=v.width
+			local rh=v.height	
+			if v.xclick then
+				local th=v.xclick
+				rx=rx-th
+				rw=rw+(th*2)
+			end
+			if v.yclick then
+				local th=v.yclick
+				rh=rh+(th*2)
+				ry=ry-th
+			end
+			graphics.setColor(50,255,50,100)
+			graphics.rectangle("fill",u*rx,u*ry,u*rw,u*rh)
+		end
+	end]]
 end)
 
 local function findObject(x,y,cb)

@@ -240,6 +240,7 @@ hook.new("load",function()
 			local base=post:new("frame",{
 				x=(post.width/2)-(height/2),y=post.height,
 				width=height,height=6,a=0,
+				xclick=width,
 				onDrag=function()
 					if post.ncubes==1 then
 						post.ncubes=0
@@ -253,6 +254,7 @@ hook.new("load",function()
 				table.insert(post.cubes,post:new("frame",{
 					x=(post.width/2)-(height/2),y=post.height-(height*l1),
 					width=height,height=height,
+					xclick=width,
 					r=c1r,g=c1g,b=c1b,a=0,
 					draw=drawCube,
 					onDrag=function(s)
@@ -695,8 +697,8 @@ hook.new("load",function()
 		width=15,height=15,
 		draw=drawCube,
 		r=180,g=20,b=20,
-		xclick=mwidth*0.1,
-		yclick=mwidth*0.1,
+		xclick=7,
+		yclick=7,
 		onClick=function(s)
 			if cubeColor=="red" then
 				cubeColor="blue"
