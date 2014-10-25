@@ -15,6 +15,11 @@ end
 function love.draw()
 	hook.queue("draw")
 end
+function love.keypressed(ky)
+	if ky=="escape" then
+		hook.queue("back_button")
+	end
+end
 if love.system.getOS()=="Android" then
 	function love.update(dt)
 		hook.queue("update",dt)

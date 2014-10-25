@@ -1,6 +1,28 @@
 local graphics=love.graphics
 local image=love.image
+local fs=love.filesystem
 hook.new("load",function()
+	local fdat=fs.read("save.txt")
+	local save={}
+	if fdat then
+		local f=loadstring("return "..fdat)
+		if f then
+			save=setfenv(f,{})() or {}
+		end
+	end
+	local savedt=0
+	local dosave
+	hook.new("update",function(dt)
+		if dosave then
+			savedt=savedt+dt
+			if savedt>=2 then
+				fs.write("save.txt",serialize(save))
+				dosave=nil
+				savedt=0
+			end
+		end
+	end)
+	
 	local function vibrate()
 		if love.system.vibrate then
 			love.system.vibrate(0.01)
@@ -50,9 +72,6 @@ hook.new("load",function()
 	local skyrises={}
 	local skyrisecubes={}
 	
-	local rfloor=0
-	local bfloor=0
-	local autonWinner
 	local ccolor="red"
 	local redFrame
 	local blueFrame
@@ -62,11 +81,23 @@ hook.new("load",function()
 	
 	local clr_red={180,20,20}
 	local clr_blue={19,65,190}
+	save.red=save.red or {}
+	save.blue=save.blue or {}
+	local autonIndicator
+	local score={
+		red={
+			floor=save.red.floor or 0,
+		},
+		blue={
+			floor=save.blue.floor or 0,
+		},
+		auton=save.auton,
+	}
 	
 	local function resetScore()
-		rfloor=0
-		bfloor=0
-		autonWinner=nil
+		score.red.floor=0
+		score.blue.floor=0
+		score.auton=nil
 		for k,v in pairs(posts) do
 			v.ncubes=0
 			v.doupdate()
@@ -76,15 +107,13 @@ hook.new("load",function()
 		floorGoalCounter.value="0"
 	end
 	
-	local autonIndicator
-	local score
-	
+	local lastr,lastb
 	local function updateScore()
 		score={
 			r=0,
 			b=0,
 			red={
-				floor=rfloor,
+				floor=score.red.floor,
 				sections=0,
 				sCubes=0,
 				owned=0,
@@ -92,19 +121,21 @@ hook.new("load",function()
 				cubes=0,
 			},
 			blue={
-				floor=bfloor,
+				floor=score.blue.floor,
 				sections=0,
 				sCubes=0,
 				owned=0,
 				pCubes=0,
 				cubes=0,
 			},
-			autonWinner=autonWinner,
+			auton=score.auton,
 		}
-		if autonWinner then
-			autonIndicator.r,autonIndicator.g,autonIndicator.b=unpack(autonWinner=="red" and clr_red or clr_blue)
-		else
-			autonIndicator.r,autonIndicator.g,autonIndicator.b=40,40,40
+		if autonIndicator then
+			if score.auton then
+				autonIndicator.r,autonIndicator.g,autonIndicator.b=unpack(score.auton=="red" and clr_red or clr_blue)
+			else
+				autonIndicator.r,autonIndicator.g,autonIndicator.b=40,40,40
+			end
 		end
 		for k,v in pairs(posts) do
 			if v.ncubes>0 then
@@ -133,13 +164,13 @@ hook.new("load",function()
 		local s=score.red
 		s.cubes=s.sCubes+s.pCubes
 		score.r=s.floor + s.sections*4 + s.sCubes*4 + s.owned + s.pCubes*2
-		if autonWinner=="red" then
+		if score.auton=="red" then
 			score.r=score.r+10
 		end
 		local s=score.blue
 		s.cubes=s.sCubes+s.pCubes
 		score.b=s.floor + s.sections*4 + s.sCubes*4 + s.owned + s.pCubes*2
-		if autonWinner=="blue" then
+		if score.auton=="blue" then
 			score.b=score.b+10
 		end
 		
@@ -172,6 +203,11 @@ hook.new("load",function()
 		end
 		scoringTextRed.value=tostring(score.r)
 		scoringTextBlue.value=tostring(score.b)
+		if lastr and (lastr~=score.r or lastb~=score.b) then
+			dosave=true
+		end
+		lastr=score.r
+		lastb=score.b
 	end
 	
 	local w,h=graphics.getDimensions()
@@ -181,7 +217,7 @@ hook.new("load",function()
 	local indicatorCube
 	local doneSwitching=true
 	
-	local function field(c1,c2)
+	local function field(c1,c2,csave)
 		local main=obj.new("frame",{
 			x=0,y=0,
 			r=0,g=0,b=0,
@@ -222,19 +258,24 @@ hook.new("load",function()
 		base:new("frame",{x=0,y=0,width=(w/h)*26.5,height=6,r=80,g=80,b=80})
 		base:new("frame",{x=(w/h)*51,y=0,width=(w/h)*49,height=6,r=80,g=80,b=80})
 
-		local function regCubes(post)
+		local function regCubes(post,postname)
+			csave.posts=csave.posts or {}
+			csave.posts[postname]=csave.posts[postname] or {}
+			local svpost=csave.posts[postname]
 			table.insert(posts,post)
 			local function updateCubes()
 				for l1=1,post.ncubes do
 					post.cubes[l1].a=255
+					svpost[l1].a=255
 				end
 				for l1=post.ncubes+1,post.capacity do
 					post.cubes[l1].a=0
+					svpost[l1].a=0
 				end
 				updateScore()
 			end
 			post.doupdate=updateCubes
-			post.ncubes=0
+			post.ncubes=svpost.ncubes or 0
 			post.layer=2
 			post.cubes={}
 			local base=post:new("frame",{
@@ -244,6 +285,7 @@ hook.new("load",function()
 				onDrag=function()
 					if post.ncubes==1 then
 						post.ncubes=0
+						svpost.ncubes=0
 						updateCubes()
 						vibrate()
 						return true
@@ -251,11 +293,13 @@ hook.new("load",function()
 				end
 			})
 			for l1=1,post.capacity do
+				svpost[l1]=svpost[l1] or {r=c1r,g=c1g,b=c1b,a=0}
+				local cpost=svpost[l1]
 				table.insert(post.cubes,post:new("frame",{
 					x=(post.width/2)-(height/2),y=post.height-(height*l1),
 					width=height,height=height,
 					xclick=width,
-					r=c1r,g=c1g,b=c1b,a=0,
+					r=cpost.r,g=cpost.g,b=cpost.b,a=cpost.a,
 					draw=drawCube,
 					onDrag=function(s)
 						local r,g,b=indicatorCube.r,indicatorCube.g,indicatorCube.b
@@ -266,9 +310,13 @@ hook.new("load",function()
 						end
 						if (post.ncubes==0 and l1==1) or l1==post.ncubes+1 or l1==post.ncubes-1 then
 							post.ncubes=l1
+							svpost.ncubes=l1
 							s.r=r
 							s.g=g
 							s.b=b
+							cpost.r=r
+							cpost.g=g
+							cpost.b=b
 							updateCubes()
 							vibrate()
 							return true
@@ -276,16 +324,22 @@ hook.new("load",function()
 							s.r=r
 							s.g=g
 							s.b=b
+							cpost.r=r
+							cpost.g=g
+							cpost.b=b
 							updateCubes()
 							vibrate()
 							return true
 						end
 					end,
 					onClick=function(s)
-						if s.r~=indicatorCube.r and not restricted then
+						if s.r~=indicatorCube.r and not post.restricted then
 							s.r=indicatorCube.r
 							s.g=indicatorCube.g
 							s.b=indicatorCube.b
+							cpost.r=indicatorCube.r
+							cpost.g=indicatorCube.g
+							cpost.b=indicatorCube.b
 							updateCubes()
 							vibrate()
 							return true
@@ -296,19 +350,19 @@ hook.new("load",function()
 		end
 
 		local highGoal=main:new("frame",{capacity=5,x=(((w/h)*100)*0.7)-(width),y=94-(height*4.5),r=128,g=128,b=128,width=width,height=height*4.5})
-		regCubes(highGoal)
+		regCubes(highGoal,"high")
 
 		local mediumGoal1=main:new("frame",{capacity=4,x=(((w/h)*100)*0.58)-(width),y=94-(height*3.5),r=128,g=128,b=128,width=width,height=height*3.5})
-		regCubes(mediumGoal1)
+		regCubes(mediumGoal1,"medium")
 
 		do
 			local sections={}
-			local nsections=0
+			local nsections=csave.sections or 0
 			local sectionsenabled=true
 			local x=(((w/h)*100)*0.46)-(width)
 			local y=89-height
 			local cubes={}
-			local ncubes=0
+			local ncubes=csave.scubes or 0
 			local updateCubes
 			local updateSections
 
@@ -326,6 +380,7 @@ hook.new("load",function()
 				onDrag=function(s)
 					if sectionsenabled and nsections==1 then
 						nsections=0
+						csave.sections=0
 						updateSections()
 						vibrate()
 					end
@@ -339,6 +394,7 @@ hook.new("load",function()
 				end
 				if rncubes~=ncubes then
 					ncubes=rncubes
+					csave.scubes=ncubes
 					updateCubes()
 				end
 				sbase.r=sectionsenabled and 220 or 150
@@ -362,6 +418,7 @@ hook.new("load",function()
 					if not sectionsenabled then
 						if ncubes==1 then
 							ncubes=0
+							csave.scubes=ncubes
 							updateCubes()
 							vibrate()
 						end
@@ -383,6 +440,7 @@ hook.new("load",function()
 					onDrag=function(s)
 						if sectionsenabled and ((nsections==0 and l1==1) or l1==nsections+1 or l1==nsections-1) then
 							nsections=l1
+							csave.sections=l1
 							updateSections()
 							vibrate()
 							return true
@@ -434,6 +492,7 @@ hook.new("load",function()
 									updateSections()
 								end
 								ncubes=l1
+								csave.scubes=ncubes
 								updateCubes()
 								vibrate()
 								return true
@@ -446,23 +505,26 @@ hook.new("load",function()
 			end
 	
 			updateSections()
+			updateCubes()
 			
 			function main.reset()
 				ncubes=0
+				csave.scubes=ncubes
 				nsections=0
+				csave.sections=ncubes
 				updateSections()
 				updateCubes()
 			end
 		end
 
 		local smallGoal1=main:new("frame",{restricted=true,capacity=2,x=(((w/h)*100)*0.34)-(width),y=94-(height*1.5),r=128,g=128,b=128,width=width,height=height*1.5})
-		regCubes(smallGoal1)
+		regCubes(smallGoal1,"small")
 
 		local mediumGoal2=main:new("frame",{capacity=4,x=(((w/h)*100)*0.22)-(width),y=94-(height*3.5),r=128,g=128,b=128,width=width,height=height*3.5})
-		regCubes(mediumGoal2)
+		regCubes(mediumGoal2,"medium2")
 
 		local smallGoal2=main:new("frame",{capacity=2,x=(((w/h)*100)*0.1)-(width),y=94-(height*1.5),r=128,g=128,b=128,width=width,height=height*1.5})
-		regCubes(smallGoal2)
+		regCubes(smallGoal2,"small2")
 
 		return main
 	end
@@ -500,132 +562,167 @@ hook.new("load",function()
 		value="0",
 	})
 	
+	local scoreMenuOpen=false
 	local scoreMenuButton=menu:new("frame",{
 		x=0,y=0,
 		width=mwidth,height=(mwidth/3.5)+10,
 		a=0,
 		onClick=function()
-			vibrate()
-			local menu=obj.new("frame",{
-				layer=20,
-				x=0,y=0,
-				width=(w/h)*100,height=100,
-				r=255,g=255,b=255,a=240,
-				onDown=function(s)
-					return true
-				end,
-				onDrag=function(s)
-					return true
-				end,
-				onClick=function(s)
-					s:destroy()
-					vibrate()
-					return true
-				end,
-			})
-			local sz=(w/h)*25
-			menu:new("text",{
-				x=0,y=30-(sz/2),
-				size=sz,
-				maxwidth=(w/h)*47,
-				r=clr_red[1],g=clr_red[2],b=clr_red[3],
-				style="center",
-				value=scoringTextRed.value,
-			})
-			menu:new("text",{
-				x=(w/h)*53,y=30-(sz/2),
-				size=sz,
-				maxwidth=(w/h)*47,
-				r=clr_blue[1],g=clr_blue[2],b=clr_blue[3],
-				style="center",
-				value=scoringTextBlue.value,
-			})
-			local bh=20
-			local bw=20
-			local ts=bh/2
-			local resetButton=menu:new("frame",{
-				x=2,y=98-bh,
-				height=bh,width=bw,
-				r=30,g=30,b=30,
-				onClick=function(s)
-					resetScore()
-				end,
-			})
-			resetButton:new("text",{
-				x=0,y=(bh/2)-(ts/2),
-				r=180,g=180,b=180,
-				size=ts,
-				maxwidth=bw,
-				value="0",
-				style="center",
-			})
-			local scoreSheetButton=menu:new("frame",{
-				x=4+bw,y=98-bh,
-				height=bh,width=bw,
-				r=30,g=30,b=30,
-				onClick=function(s)
-					local menu=menu:new("frame",{
-						layer=menu.layer+3,
-						x=0,y=0,
-						width=(w/h)*100,height=100,
-						r=255,g=255,b=255,a=240,
-						onDown=function(s)
-							return true
-						end,
-						onDrag=function(s)
-							return true
-						end,
-						onClick=function(s)
-							s:destroy()
-							vibrate()
-							return true
-						end,
-					})
-					local redtext="Red Teams:\n"..
-						"-Skyrise:\n"..
-						"--Sections [ "..score.red.sections.." ]\n"..
-						"--Cubes [ "..score.red.sCubes.." ]\n"..
-						"-Posts:\n"..
-						"--Owned [ "..score.red.owned.." ]\n"..
-						"--Cubes [ "..score.red.pCubes.." ]\n"..
-						"-Floor goals [ "..score.red.floor.." ]\n"..
-						"-Auton winner [ "..(score.autonWinner=="red" and "yes" or "no").." ]"
-					local bluetext="Blue Teams:\n"..
-						"-Skyrise:\n"..
-						"--Sections [ "..score.blue.sections.." ]\n"..
-						"--Cubes [ "..score.blue.sCubes.." ]\n"..
-						"-Posts:\n"..
-						"--Owned [ "..score.blue.owned.." ]\n"..
-						"--Cubes [ "..score.blue.pCubes.." ]\n"..
-						"-Floor goals [ "..score.blue.floor.." ]\n"..
-						"-Auton winner [ "..(score.autonWinner=="blue" and "yes" or "no").." ]"
-					local function text(txt,x,y,size,r,g,b)
-						local c=0
-						for i,l in txt:gmatch("([%-]*)([^\n]+)") do
-							menu:new("text",{
-								x=x+((#i)*(size*2)),y=y+(c*(size*1.3)),
-								maxwidth=(w/h)*46,
-								size=size,
-								value=l,
-							})
-							c=c+1
-						end
+			if not scoreMenuOpen then
+				scoreMenuOpen=true
+				vibrate()
+				local menu
+				local back=hook.new("back_button",function()
+					if menu.ey==0 then
+						menu.ey=-100
+					else
+						menu.ey=0
 					end
-					text(redtext,(w/h)*2,(w/h)*2,6.5)
-					text(bluetext,(w/h)*52,(w/h)*2,6.5)
 					vibrate()
-					return true
-				end
-			})
-			local ts=bh/2
-			scoreSheetButton:new("text",{
-				x=0,y=(bh/2)-(ts/2),
-				r=180,g=180,b=180,
-				size=ts,
-				maxwidth=bw,
-				value="S",
-				style="center",
-			})
+				end)
+				menu=obj.new("frame",{
+					layer=20,
+					x=0,y=-100,
+					ey=0,
+					width=(w/h)*100,height=100,
+					r=255,g=255,b=255,a=240,
+					onDown=function(s)
+						return true
+					end,
+					onDrag=function(s)
+						return true
+					end,
+					onClick=function(s)
+						if s.ey==0 then
+							s.ey=-100
+						else
+							s.ey=0
+						end
+						vibrate()
+						return true
+					end,
+					update=function(s,dt)
+						if s.ey and s.ey~=s.y then
+							if s.ey>s.y then
+								s.y=s.y+(math.max(5,(s.ey-s.y)*4)*dt)
+							else
+								s.y=s.y-(math.max(5,(s.y-s.ey)*4)*dt)
+							end
+							if math.abs(s.y-s.ey)<0.1 then
+								s.y=s.ey
+								if s.y~=0 then
+									hook.del(back)
+									s:destroy()
+									scoreMenuOpen=false
+								end
+							end
+						end
+					end,
+				})
+				local sz=(w/h)*25
+				menu:new("text",{
+					x=0,y=30-(sz/2),
+					size=sz,
+					maxwidth=(w/h)*47,
+					r=clr_red[1],g=clr_red[2],b=clr_red[3],
+					style="center",
+					value=scoringTextRed.value,
+				})
+				menu:new("text",{
+					x=(w/h)*53,y=30-(sz/2),
+					size=sz,
+					maxwidth=(w/h)*47,
+					r=clr_blue[1],g=clr_blue[2],b=clr_blue[3],
+					style="center",
+					value=scoringTextBlue.value,
+				})
+				local bh=20
+				local bw=20
+				local ts=bh/2
+				local resetButton=menu:new("frame",{
+					x=2,y=98-bh,
+					height=bh,width=bw,
+					r=30,g=30,b=30,
+					onClick=function(s)
+						resetScore()
+					end,
+				})
+				resetButton:new("text",{
+					x=0,y=(bh/2)-(ts/1.7),
+					r=180,g=180,b=180,
+					size=ts,
+					maxwidth=bw,
+					value="0",
+					style="center",
+				})
+				local scoreSheetButton=menu:new("frame",{
+					x=4+bw,y=98-bh,
+					height=bh,width=bw,
+					r=30,g=30,b=30,
+					onClick=function(s)
+						local menu=menu:new("frame",{
+							layer=menu.layer+3,
+							x=0,y=0,
+							width=(w/h)*100,height=100,
+							r=255,g=255,b=255,a=240,
+							onDown=function(s)
+								return true
+							end,
+							onDrag=function(s)
+								return true
+							end,
+							onClick=function(s)
+								s:destroy()
+								vibrate()
+								return true
+							end,
+						})
+						local redtext="Red Teams:\n"..
+							"-Skyrise:\n"..
+							"--Sections [ "..score.red.sections.." ]\n"..
+							"--Cubes [ "..score.red.sCubes.." ]\n"..
+							"-Posts:\n"..
+							"--Owned [ "..score.red.owned.." ]\n"..
+							"--Cubes [ "..score.red.pCubes.." ]\n"..
+							"-Floor goals [ "..score.red.floor.." ]\n"..
+							"-Auton winner [ "..(score.auton=="red" and "yes" or "no").." ]"
+						local bluetext="Blue Teams:\n"..
+							"-Skyrise:\n"..
+							"--Sections [ "..score.blue.sections.." ]\n"..
+							"--Cubes [ "..score.blue.sCubes.." ]\n"..
+							"-Posts:\n"..
+							"--Owned [ "..score.blue.owned.." ]\n"..
+							"--Cubes [ "..score.blue.pCubes.." ]\n"..
+							"-Floor goals [ "..score.blue.floor.." ]\n"..
+							"-Auton winner [ "..(score.auton=="blue" and "yes" or "no").." ]"
+						local function text(txt,x,y,size,r,g,b)
+							local c=0
+							for i,l in txt:gmatch("([%-]*)([^\n]+)") do
+								menu:new("text",{
+									x=x+((#i)*(size*2)),y=y+(c*(size*1.3)),
+									maxwidth=(w/h)*46,
+									size=size,
+									value=l,
+								})
+								c=c+1
+							end
+						end
+						text(redtext,(w/h)*2,(w/h)*2,6.5)
+						text(bluetext,(w/h)*52,(w/h)*2,6.5)
+						vibrate()
+						return true
+					end
+				})
+				local ts=bh/2
+				scoreSheetButton:new("text",{
+					x=0,y=(bh/2)-(ts/1.7),
+					r=180,g=180,b=180,
+					size=ts,
+					maxwidth=bw,
+					value="S",
+					style="center",
+				})
+			end
 		end,
 	})
 	
@@ -643,15 +740,13 @@ hook.new("load",function()
 	})
 	
 	local function updateCounter(v)
-		if ccolor=="red" then
-			rfloor=math.max(0,rfloor+v)
-		else
-			bfloor=math.max(0,bfloor+v)
-		end
-		floorGoalCounter.value=tostring(ccolor=="red" and rfloor or bfloor)
+		score[ccolor].floor=math.max(0,score[ccolor].floor+v)
+		save[ccolor].floor=score[ccolor].floor
+		floorGoalCounter.value=tostring(ccolor=="red" and score.red.floor or score.blue.floor)
 		updateScore()
 		vibrate()
 	end
+	updateCounter(0)
 	
 	local floorGoalAdd=menu:new("frame",{
 		x=mwidth/8,y=48,
@@ -722,19 +817,31 @@ hook.new("load",function()
 		width=15,height=15,
 		r=40,g=40,b=40,
 		onClick=function(s)
-			if not autonWinner or autonWinner~=ccolor then
-				autonWinner=ccolor
+			if not score.auton or score.auton~=ccolor then
+				score.auton=ccolor
+				save.auton=ccolor
 			else
-				autonWinner=nil
+				score.auton=nil
+				save.auton=nil
 			end
 			updateScore()
 			vibrate()
 			return true
 		end,
 	})
+	autonIndicator:new("text",{
+		x=0,y=3.5,
+		size=6,
+		maxwidth=15,
+		r=180,g=180,b=180,a=255,
+		value="{}",
+		style="center",
+	})
 	
-	redFrame=field(clr_red,clr_blue)
-	blueFrame=field(clr_blue,clr_red)
+	save.red=save.red or {}
+	redFrame=field(clr_red,clr_blue,save.red)
+	save.blue=save.blue or {}
+	blueFrame=field(clr_blue,clr_red,save.blue)
 	blueFrame.x=(w/h)*-100
 	
 	local function ud(s,dt)
@@ -758,11 +865,12 @@ hook.new("load",function()
 					ccolor="red"
 				end
 				vibrate()
-				floorGoalCounter.value=tostring(ccolor=="red" and rfloor or bfloor)
+				floorGoalCounter.value=tostring(ccolor=="red" and score.red.floor or score.blue.floor)
 				return true
 			end
 		end,
 		draw=function(s,u)
+			graphics.setColor(unpack(ccolor=="red" and clr_red or clr_blue))
 			graphics.rectangle("fill",u*s.realx,u*s.realy,u*s.width,u*s.height)
 			graphics.setColor(180,180,180)
 			graphics.setLineWidth(u*(s.height/8))
@@ -774,5 +882,7 @@ hook.new("load",function()
 			graphics.line(u*(sx+(arw/2)),u*(sy-(s.height/4)),u*sx,u*sy,u*(sx+(arw/2)),u*(sy+(s.height/4)))
 		end,
 	})
+	
+	updateScore()
 end)
 
