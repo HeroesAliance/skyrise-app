@@ -8,6 +8,7 @@ return function()
 		end
 		vibrate()
 	end)
+	local scoreSheet
 	menu=obj.new("frame",{
 		layer=20,
 		x=0,y=-100,
@@ -42,6 +43,19 @@ return function()
 						hook.del(back)
 						s:destroy()
 						scoreMenuOpen=false
+					end
+				end
+			end
+			if s.ex and s.ex~=s.x then
+				if s.ex>s.x then
+					s.x=s.x+(math.max(5,(s.ex-s.x)*4)*dt)
+				else
+					s.x=s.x-(math.max(5,(s.x-s.ex)*4)*dt)
+				end
+				if math.abs(s.x-s.ex)<0.1 then
+					s.x=s.ex
+					if s.x==0 then
+						scoreSheet:destroy()
 					end
 				end
 			end
@@ -88,9 +102,10 @@ return function()
 		height=bh,width=bw,
 		r=30,g=30,b=30,
 		onClick=function(s)
-			local menu=menu:new("frame",{
+			menu.ex=(w/h)*100
+			scoreSheet=menu:new("frame",{
 				layer=menu.layer+3,
-				x=0,y=0,
+				x=(w/h)*-100,y=0,
 				width=(w/h)*100,height=100,
 				r=255,g=255,b=255,a=240,
 				onDown=function(s)
@@ -100,33 +115,37 @@ return function()
 					return true
 				end,
 				onClick=function(s)
-					s:destroy()
+					if menu.ex==0 then
+						menu.ex=(w/h)*-100
+					else
+						menu.ex=0
+					end
 					vibrate()
 					return true
 				end,
 			})
-			local redtext="Red Teams:\n"..
+			local ltext="Red Teams:\n"..
 				"-Skyrise:\n"..
 				"--Sections [ "..score.red.sections.." ]\n"..
 				"--Cubes [ "..score.red.sCubes.." ]\n"..
 				"-Posts:\n"..
 				"--Owned [ "..score.red.owned.." ]\n"..
-				"--Cubes [ "..score.red.pCubes.." ]\n"..
+				"--Cubes [ "..score.red.pCubes.." ]\n \n"..
 				"-Floor goals [ "..score.red.floor.." ]\n"..
 				"-Auton winner [ "..(score.auton=="red" and "yes" or "no").." ]"
-			local bluetext="Blue Teams:\n"..
+			local rtext="Blue Teams:\n"..
 				"-Skyrise:\n"..
 				"--Sections [ "..score.blue.sections.." ]\n"..
 				"--Cubes [ "..score.blue.sCubes.." ]\n"..
 				"-Posts:\n"..
 				"--Owned [ "..score.blue.owned.." ]\n"..
-				"--Cubes [ "..score.blue.pCubes.." ]\n"..
+				"--Cubes [ "..score.blue.pCubes.." ]\n \n"..
 				"-Floor goals [ "..score.blue.floor.." ]\n"..
 				"-Auton winner [ "..(score.auton=="blue" and "yes" or "no").." ]"
 			local function text(txt,x,y,size,r,g,b)
 				local c=0
 				for i,l in txt:gmatch("([%-]*)([^\n]+)") do
-					menu:new("text",{
+					scoreSheet:new("text",{
 						x=x+((#i)*(size*2)),y=y+(c*(size*1.3)),
 						maxwidth=(w/h)*46,
 						size=size,
@@ -135,8 +154,8 @@ return function()
 					c=c+1
 				end
 			end
-			text(redtext,(w/h)*2,(w/h)*2,6.5)
-			text(bluetext,(w/h)*52,(w/h)*2,6.5)
+			text(ltext,(w/h)*2,(w/h)*2,6.5)
+			text(rtext,(w/h)*52,(w/h)*2,6.5)
 			vibrate()
 			return true
 		end
