@@ -519,6 +519,7 @@ return function()
 		x=mwidth/8,y=36,
 		width=mwidth-mwidth/4,height=12,
 		r=20,g=20,b=20,
+		draw=bevelDraw({tl=true,tr=true},3),
 	}):new("text",{
 		x=0,y=1,
 		size=8,
@@ -597,7 +598,7 @@ return function()
 			return true
 		end
 	})
-	local ts=indicatorCube.width/2
+	local ts=indicatorCube.width/2.2
 	indicatorCubeText=indicatorCube:new("text",{
 		x=0,y=(indicatorCube.width/2)-(ts/1.7),
 		r=200,g=200,b=200,
@@ -609,8 +610,8 @@ return function()
 	
 	autonIndicator=obj.new("frame",{
 		layer=10,
-		x=((w/h)*77)-17,y=2,
-		width=15,height=15,
+		x=((w/h)*77)-19,y=2,
+		width=17,height=17,
 		r=40,g=40,b=40,
 		onClick=function(s)
 			if not score.auton or score.auton~=ccolor then
@@ -624,11 +625,13 @@ return function()
 			vibrate()
 			return true
 		end,
+		draw=bevelDraw({tl=true,tr=true},3),
 	})
+	local ts=autonIndicator.width/2
 	autonIndicator:new("text",{
-		x=0,y=3.5,
-		size=6,
-		maxwidth=15,
+		x=0,y=(autonIndicator.width/2)-(ts/1.7),
+		size=ts,
+		maxwidth=autonIndicator.width,
 		r=180,g=180,b=180,a=255,
 		value="{}",
 		style="center",
@@ -644,6 +647,7 @@ return function()
 		s.x=s.ex
 	end
 	updateCounter(0)
+	local ssbdraw=bevelDraw({tl=true,tr=true},3)
 	local switchSideButton=menu:new("frame",{
 		x=(mwidth/8),y=80,
 		width=mwidth-(mwidth/4),height=12,
@@ -667,7 +671,8 @@ return function()
 		end,
 		draw=function(s,u)
 			graphics.setColor(unpack(ccolor=="red" and clr_red or clr_blue))
-			graphics.rectangle("fill",u*s.realx,u*s.realy,u*s.width,u*s.height)
+			ssbdraw(s,u)
+			--graphics.rectangle("fill",u*s.realx,u*s.realy,u*s.width,u*s.height)
 			graphics.setColor(180,180,180)
 			graphics.setLineWidth(u*(s.height/8))
 			graphics.setLineJoin("miter")
