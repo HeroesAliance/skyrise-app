@@ -23,43 +23,6 @@ local function new(parent,tpe,prefs)
 	return obj.new(tpe,prefs,parent)
 end
 
-function bevelDraw(bvl,bo)
-	bo=bo or s.height/4
-	return function(s,u)
-		local lw=s.width/50
-		local points={}
-		local function i(x,y)
-			table.insert(points,x*u)
-			table.insert(points,y*u)
-		end
-		if bvl.tl then
-			i(s.realx,s.realy+bo)
-			i(s.realx+bo,s.realy)
-		else
-			i(s.realx,s.realy)
-		end
-		if bvl.tr then
-			i(s.realx+s.width-bo,s.realy)
-			i(s.realx+s.width,s.realy+bo)
-		else
-			i(s.realx+s.width,s.realy)
-		end
-		if bvl.br then
-			i(s.realx+s.width,s.realy+s.height-bo)
-			i(s.realx+s.width-bo,s.realy+s.height)
-		else
-			i(s.realx+s.width,s.realy+s.height)
-		end
-		if bvl.bl then
-			i(s.realx+bo,s.realy+s.height)
-			i(s.realx,s.realy+s.height-bo)
-		else
-			i(s.realx,s.realy+s.height)
-		end
-		graphics.polygon("fill",unpack(points))
-	end
-end
-
 local function destroy(object)
 	for k,v in pairs(object.child) do
 		v:destroy()

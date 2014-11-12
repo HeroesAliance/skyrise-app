@@ -62,6 +62,8 @@ return function()
 		dosave=true
 		score.red.floor=0
 		score.blue.floor=0
+		save.red.floor=score.red.floor
+		save.blue.floor=score.blue.floor
 		score.auton=nil
 		save.auton=nil
 		for k,v in pairs(posts) do
@@ -259,12 +261,13 @@ return function()
 							tocolor=fcolor
 						end
 						local u=false
-						if score[tocolor].left>0 and s.r~=r then
-							s.r=r s.g=g s.b=b cpost.r=r cpost.g=g cpost.b=b
-							u=true
-						end
 						if l1==post.ncubes-1 or (((post.ncubes==0 and l1==1) or l1==post.ncubes+1) and score[tocolor].left>0) then
 							post.ncubes=l1 svpost.ncubes=l1
+							updateCubes()
+							u=true
+						end
+						if score[tocolor].left>0 and s.r~=r and s.a~=0 then
+							s.r=r s.g=g s.b=b cpost.r=r cpost.g=g cpost.b=b
 							u=true
 						end
 						if u then

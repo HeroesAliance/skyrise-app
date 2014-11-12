@@ -1,6 +1,7 @@
 require("hook")
 require("obj")
 require("app")
+socket=require("socket")
 function love.load()
 	love.window.setMode(900,500,{resizable=true})
 	hook.queue("load")

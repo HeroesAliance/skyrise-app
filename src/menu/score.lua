@@ -56,6 +56,7 @@ return function()
 					s.x=s.ex
 					if s.x==0 then
 						scoreSheet:destroy()
+						scoreSheet=nil
 					end
 				end
 			end
@@ -104,61 +105,63 @@ return function()
 		r=30,g=30,b=30,
 		onClick=function(s)
 			menu.ex=(w/h)*100
-			scoreSheet=menu:new("frame",{
-				layer=menu.layer+3,
-				x=(w/h)*-100,y=0,
-				width=(w/h)*100,height=100,
-				r=255,g=255,b=255,a=240,
-				onDown=function(s)
-					return true
-				end,
-				onDrag=function(s)
-					return true
-				end,
-				onClick=function(s)
-					if menu.ex==0 then
-						menu.ex=(w/h)*-100
-					else
-						menu.ex=0
+				if not scoreSheet then
+				scoreSheet=menu:new("frame",{
+					layer=menu.layer+3,
+					x=(w/h)*-100,y=0,
+					width=(w/h)*100,height=100,
+					r=255,g=255,b=255,a=240,
+					onDown=function(s)
+						return true
+					end,
+					onDrag=function(s)
+						return true
+					end,
+					onClick=function(s)
+						if menu.ex==0 then
+							menu.ex=(w/h)*100
+						else
+							menu.ex=0
+						end
+						vibrate()
+						return true
+					end,
+				})
+				local ltext="Red Teams:\n"..
+					"-Skyrise:\n"..
+					"--Sections [ "..score.red.sections.." ]\n"..
+					"--Cubes [ "..score.red.sCubes.." ]\n"..
+					"-Posts:\n"..
+					"--Owned [ "..score.red.owned.." ]\n"..
+					"--Cubes [ "..score.red.pCubes.." ]\n \n"..
+					"-Floor goals [ "..score.red.floor.." ]\n"..
+					"-Auton winner [ "..(score.auton=="red" and "yes" or "no").." ]"
+				local rtext="Blue Teams:\n"..
+					"-Skyrise:\n"..
+					"--Sections [ "..score.blue.sections.." ]\n"..
+					"--Cubes [ "..score.blue.sCubes.." ]\n"..
+					"-Posts:\n"..
+					"--Owned [ "..score.blue.owned.." ]\n"..
+					"--Cubes [ "..score.blue.pCubes.." ]\n \n"..
+					"-Floor goals [ "..score.blue.floor.." ]\n"..
+					"-Auton winner [ "..(score.auton=="blue" and "yes" or "no").." ]"
+				local function text(txt,x,y,size,r,g,b)
+					local c=0
+					for i,l in txt:gmatch("([%-]*)([^\n]+)") do
+						scoreSheet:new("text",{
+							x=x+((#i)*(size*2)),y=y+(c*(size*1.3)),
+							maxwidth=(w/h)*46,
+							size=size,
+							value=l,
+						})
+						c=c+1
 					end
-					vibrate()
-					return true
-				end,
-			})
-			local ltext="Red Teams:\n"..
-				"-Skyrise:\n"..
-				"--Sections [ "..score.red.sections.." ]\n"..
-				"--Cubes [ "..score.red.sCubes.." ]\n"..
-				"-Posts:\n"..
-				"--Owned [ "..score.red.owned.." ]\n"..
-				"--Cubes [ "..score.red.pCubes.." ]\n \n"..
-				"-Floor goals [ "..score.red.floor.." ]\n"..
-				"-Auton winner [ "..(score.auton=="red" and "yes" or "no").." ]"
-			local rtext="Blue Teams:\n"..
-				"-Skyrise:\n"..
-				"--Sections [ "..score.blue.sections.." ]\n"..
-				"--Cubes [ "..score.blue.sCubes.." ]\n"..
-				"-Posts:\n"..
-				"--Owned [ "..score.blue.owned.." ]\n"..
-				"--Cubes [ "..score.blue.pCubes.." ]\n \n"..
-				"-Floor goals [ "..score.blue.floor.." ]\n"..
-				"-Auton winner [ "..(score.auton=="blue" and "yes" or "no").." ]"
-			local function text(txt,x,y,size,r,g,b)
-				local c=0
-				for i,l in txt:gmatch("([%-]*)([^\n]+)") do
-					scoreSheet:new("text",{
-						x=x+((#i)*(size*2)),y=y+(c*(size*1.3)),
-						maxwidth=(w/h)*46,
-						size=size,
-						value=l,
-					})
-					c=c+1
 				end
+				text(ltext,(w/h)*2,(w/h)*2,6.5)
+				text(rtext,(w/h)*52,(w/h)*2,6.5)
+				vibrate()
+				return true
 			end
-			text(ltext,(w/h)*2,(w/h)*2,6.5)
-			text(rtext,(w/h)*52,(w/h)*2,6.5)
-			vibrate()
-			return true
 		end,
 		draw=bevelDraw({tl=true,tr=true},3)
 	})
