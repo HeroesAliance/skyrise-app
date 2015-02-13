@@ -522,7 +522,7 @@ return function()
 		x=mwidth/8,y=36,
 		width=mwidth-mwidth/4,height=12,
 		r=20,g=20,b=20,
-		draw=bevelDraw({tl=true,tr=true},3),
+		draw=bevelDraw({tl=true},3),
 	}):new("text",{
 		x=0,y=1,
 		size=8,
@@ -628,7 +628,7 @@ return function()
 			vibrate()
 			return true
 		end,
-		draw=bevelDraw({tl=true,tr=true},3),
+		draw=bevelDraw({tl=true},3),
 	})
 	local ts=autonIndicator.width/2
 	autonIndicator:new("text",{
@@ -650,7 +650,7 @@ return function()
 		s.x=s.ex
 	end
 	updateCounter(0)
-	local ssbdraw=bevelDraw({tl=true,tr=true},3)
+	local ssbdraw=bevelDraw({tl=true},3)
 	local switchSideButton=menu:new("frame",{
 		x=(mwidth/8),y=80,
 		width=mwidth-(mwidth/4),height=12,

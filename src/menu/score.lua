@@ -89,7 +89,7 @@ return function()
 		onClick=function(s)
 			resetScore()
 		end,
-		draw=bevelDraw({tl=true,tr=true},3)
+		draw=bevelDraw({tl=true},3)
 	})
 	resetButton:new("text",{
 		x=0,y=(bh/2)-(ts/1.7),
@@ -163,7 +163,7 @@ return function()
 				return true
 			end
 		end,
-		draw=bevelDraw({tl=true,tr=true},3)
+		draw=bevelDraw({tl=true},3)
 	})
 	local ts=bh/2
 	scoreSheetButton:new("text",{
